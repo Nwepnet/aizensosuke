@@ -1,0 +1,675 @@
+-- Obtenir les services nécessaires
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Fonction utilitaire pour attendre un enfant dans une hiérarchie
+local function waitForChildRecursive(parent, childName)
+	local child = parent:FindFirstChild(childName)
+	while not child do
+		child = parent:FindFirstChild(childName)
+		wait(0.1)
+	end
+	return child
+end
+
+-- Modifier les noms des boutons dans la Hotbar
+local function updateHotbarButtons()
+	-- Rechercher les éléments dans PlayerGui
+	local hotbar = waitForChildRecursive(playerGui, "Hotbar")
+	local backpack = waitForChildRecursive(hotbar, "Backpack")
+	local hotbarFrame = waitForChildRecursive(backpack, "Hotbar")
+
+	-- Liste des mouvements à définir
+	local moves = {
+		{button = "1", name = "Flash-Step"},
+		{button = "2", name = "Gravity-Zero"},
+		{button = "3", name = "Multi-Slash"},
+		{button = "4", name = "Hado 63"},
+	}
+
+	-- Parcourir les mouvements pour modifier les noms
+	for _, move in ipairs(moves) do
+		local baseButton = hotbarFrame:FindFirstChild(move.button)
+		if not baseButton then
+			warn("Bouton introuvable : " .. move.button)
+			continue
+		end
+
+		local toolName = baseButton:FindFirstChild("Base")
+		if toolName then
+			local textLabel = toolName:FindFirstChild("ToolName")
+			if textLabel then
+				textLabel.Text = move.name
+			else
+				warn("ToolName introuvable pour le bouton : " .. move.button)
+			end
+		else
+			warn("Base introuvable pour le bouton : " .. move.button)
+		end
+	end
+end
+
+-- Appeler la fonction pour mettre à jour les noms
+updateHotbarButtons()
+
+
+-- Fonction pour mettre à jour le texte "HADO 99"
+local function setUltimateText()
+	-- Obtenir l'interface utilisateur (ScreenGui)
+	local screenGui = playerGui:FindFirstChild("ScreenGui")
+	playerGui.ScreenGui:WaitForChild("MagicHealth").Health.Bar.Bar.ImageColor3 = Color3.fromRGB(119, 60, 179)
+	if not screenGui then
+		warn("ScreenGui introuvable dans PlayerGui")
+		return
+	end
+
+	-- Rechercher le cadre "MagicHealth"
+	local magicHealthFrame = screenGui:FindFirstChild("MagicHealth")
+	if not magicHealthFrame then
+		warn("MagicHealth introuvable dans ScreenGui")
+		return
+	end
+
+	-- Rechercher le texte "TextLabel"
+	local textLabel = magicHealthFrame:FindFirstChild("TextLabel")
+	if not textLabel then
+		warn("TextLabel introuvable dans MagicHealth")
+		return
+	end
+
+	-- Mettre à jour le texte
+	textLabel.Text = "HADO 99"
+	print("Texte mis à jour avec succès : HADO 99")
+end
+
+-- Appeler la fonction pour mettre à jour le texte
+setUltimateText()
+
+
+local animationId = 13376869471 -- ID de l'animation "Flash Step"
+local replacementAnimationId = 17861844708 -- ID de l'animation de remplacement
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+-- Fonction pour créer les particules de "Flash Step"
+local function createFlashStepParticles()
+	local effectPart = Instance.new("Part")
+	effectPart.Size = Vector3.new(1, 1, 1)
+	effectPart.Anchored = true
+	effectPart.CanCollide = false
+	effectPart.Transparency = 1
+	effectPart.Name = "FlashStepEffect"
+	effectPart.Parent = workspace
+
+	local flashEmitter = Instance.new("ParticleEmitter")
+	flashEmitter.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(63, 31, 94)), -- Violet vif
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0)) -- Noir
+	})
+	flashEmitter.Lifetime = NumberRange.new(0.3, 0.7)
+	flashEmitter.Speed = NumberRange.new(30, 60)
+	flashEmitter.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 3),
+		NumberSequenceKeypoint.new(1, 0)
+	})
+	flashEmitter.Rate = 100
+	flashEmitter.Rotation = NumberRange.new(0, 360)
+	flashEmitter.RotSpeed = NumberRange.new(-180, 180)
+	flashEmitter.Texture = "rbxassetid://124024652729031" -- Texture de particule
+	flashEmitter.Parent = effectPart
+
+	-- Supprimer la partie et les particules après leur durée de vie
+	game.Debris:AddItem(effectPart, 1)
+
+	return effectPart
+end
+
+-- Fonction pour activer les particules à la position du joueur
+local function playFlashStepParticles()
+	local effectPart = createFlashStepParticles()
+	if character:FindFirstChild("HumanoidRootPart") then
+		effectPart.CFrame = character.HumanoidRootPart.CFrame
+	end
+end
+
+-- Fonction principale pour détecter et jouer les effets de "Flash Step"
+local function onAnimationPlayed(animationTrack)
+	if animationTrack.Animation.AnimationId == "rbxassetid://" .. animationId then
+		-- Jouer les particules
+		playFlashStepParticles()
+
+		-- Charger et jouer l'animation de remplacement
+		local replacementAnimation = Instance.new("Animation")
+		replacementAnimation.AnimationId = "rbxassetid://" .. replacementAnimationId
+		local replacementAnim = humanoid:LoadAnimation(replacementAnimation)
+
+		replacementAnim:Play()
+	end
+end
+
+-- Connecter l'événement d'animation pour détecter le "Flash Step"
+humanoid.AnimationPlayed:Connect(onAnimationPlayed)
+
+-- Variables
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+-- Animation ID de Gravity Zero (animation de base)
+local gravityZeroAnimationId = "rbxassetid://13294790250"
+-- Animation ID de remplacement
+local replacementAnimationId = "rbxassetid://15284324734"
+
+-- Fonction pour créer les effets de particules pour Gravity Zero
+local function createGravityZeroEffects()
+	-- Créer le part pour l'effet
+	local BlackFlashHit = Instance.new("Part")
+
+	-- Déplacer l'effet un peu au-dessus de la main gauche
+	local leftArmPosition = character["Left Arm"].CFrame
+	BlackFlashHit.CFrame = leftArmPosition * CFrame.new(0, -6, 0)  -- Décalage vertical de 2 studs au-dessus de la main gauche
+
+	BlackFlashHit.Anchored = true
+	BlackFlashHit.CanCollide = false
+	BlackFlashHit.Size = Vector3.new(1, 1, 1)
+	BlackFlashHit.Transparency = 1
+	BlackFlashHit.Name = "BlackFlashHit"
+	BlackFlashHit.Parent = workspace
+
+	-- Nettoyage automatique du part après 5 secondes
+	game.Debris:AddItem(BlackFlashHit, 5)
+
+	-- Particules : Sparks
+	local Sparks = Instance.new("ParticleEmitter")
+	Sparks.Brightness = 15
+	Sparks.Color = ColorSequence.new(Color3.fromRGB(128, 0, 128))
+	Sparks.Lifetime = NumberRange.new(0.8, 1.3)
+	Sparks.Rate = 400
+	Sparks:Emit(50)  -- Émet une seule fois
+	Sparks.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 4), NumberSequenceKeypoint.new(1, 0)})
+	Sparks.Texture = "rbxassetid://15407518755"
+	Sparks.Parent = BlackFlashHit
+
+	-- Nettoyage automatique des particules Sparks après 1 seconde
+	game.Debris:AddItem(Sparks, 1.5)
+
+	-- Particules : Blast
+	local Blast = Instance.new("ParticleEmitter")
+	Blast.Brightness = 10
+	Blast.Color = ColorSequence.new(Color3.fromRGB(255, 0, 255))
+	Blast.Lifetime = NumberRange.new(0.05, 0.1)
+	Blast.Rate = 100
+	Blast:Emit(20)
+	Blast.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 10), NumberSequenceKeypoint.new(1, 0)})
+	Blast.Texture = "rbxassetid://7994629137"
+	Blast.Parent = BlackFlashHit
+
+	-- Nettoyage automatique des particules Blast après 1 seconde
+	game.Debris:AddItem(Blast, 1.5)
+
+	-- Particules : Lightning
+	local Lightning = Instance.new("ParticleEmitter")
+	Lightning.Brightness = 5
+	Lightning.Color = ColorSequence.new(Color3.fromRGB(255, 255, 255))
+	Lightning.Lifetime = NumberRange.new(0.2, 0.5)
+	Lightning.Rate = 50
+	Lightning:Emit(15)
+	Lightning.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(0.5, 10), NumberSequenceKeypoint.new(1, 0)})
+	Lightning.Texture = "rbxassetid://14255829980"
+	Lightning.Parent = BlackFlashHit
+
+	-- Nettoyage automatique des particules Lightning après 1 seconde
+	game.Debris:AddItem(Lightning, 1.5)
+end
+
+-- Remplacer l'animation et créer les effets lorsque l'animation est jouée
+humanoid.AnimationPlayed:Connect(function(animationTrack)
+	if animationTrack.Animation.AnimationId == gravityZeroAnimationId then
+		-- Remplacer l'animation de base par l'animation de remplacement
+		for _, animTrack in pairs(humanoid:GetPlayingAnimationTracks()) do
+			animTrack:Stop()
+		end
+
+		-- Charger et jouer l'animation de remplacement
+		local newAnim = Instance.new("Animation")
+		newAnim.AnimationId = replacementAnimationId
+		local animTrack = humanoid:LoadAnimation(newAnim)
+		animTrack:Play()
+		animTrack:AdjustSpeed(1.8)
+
+		-- Attendre 1,9 secondes avant de créer les effets de Gravity Zero
+		wait(0.8)  -- Attente de 0.8 secondes pour laisser le temps à l'animation de se jouer
+
+		-- Créer les effets de Gravity Zero après 0.8 secondes
+		createGravityZeroEffects()  -- Crée les effets de particules
+	end
+end)
+
+-- end of move 2
+
+local multiSlashAnimationId = 13376962659 -- ID de l'animation "MultiSlash"
+local replacementAnimationId = 15290930205 -- ID de l'animation de remplacement pour "MultiSlash"
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+-- Fonction pour créer les particules de "MultiSlash"
+local function createMultiSlashEffects()
+	local effectPart = Instance.new("Part")
+	effectPart.Size = Vector3.new(1, 1, 1)
+	effectPart.Anchored = true
+	effectPart.CanCollide = false
+	effectPart.Transparency = 1
+	effectPart.Name = "MultiSlashEffect"
+	effectPart.Parent = workspace
+
+	local sparks = Instance.new("ParticleEmitter")
+	sparks.Color = ColorSequence.new(Color3.fromRGB(73, 9, 95), Color3.fromRGB(255, 255, 255))
+	sparks.Lifetime = NumberRange.new(1, 2)
+	sparks.Speed = NumberRange.new(20, 150)
+	sparks.Rate = 400
+	sparks.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 3),
+		NumberSequenceKeypoint.new(1, 0)
+	})
+	sparks.Texture = "rbxassetid://15401642957"
+	sparks.Parent = effectPart
+
+	local blast = Instance.new("ParticleEmitter")
+	blast.Color = ColorSequence.new(Color3.fromRGB(74, 37, 111), Color3.fromRGB(0, 0, 0))
+	blast.Lifetime = NumberRange.new(0.05, 0.05)
+	blast.Speed = NumberRange.new(0.1, 0.1)
+	blast.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 10),
+		NumberSequenceKeypoint.new(1, 25)
+	})
+	blast.Texture = "rbxassetid://15077160455"
+	blast.Parent = effectPart
+
+	game.Debris:AddItem(effectPart, 2) -- Supprimer après 2 secondes
+	return effectPart
+end
+
+-- Fonction pour jouer l'animation de remplacement
+local function playReplacementAnimation()
+	local replacementAnimation = Instance.new("Animation")
+	replacementAnimation.AnimationId = "rbxassetid://" .. replacementAnimationId
+	local animTrack = humanoid:LoadAnimation(replacementAnimation)
+
+	animTrack:Play()
+	return animTrack
+end
+
+-- Fonction pour gérer l'animation "MultiSlash"
+local function onAnimationPlayed(animationTrack)
+	if animationTrack.Animation.AnimationId == "rbxassetid://" .. multiSlashAnimationId then
+		-- Arrêter l'animation originale
+		animationTrack:Stop()
+
+		-- Jouer l'animation de remplacement
+		local animTrack = playReplacementAnimation()
+
+		-- Jouer les effets visuels
+		local effectPart = createMultiSlashEffects()
+		if character:FindFirstChild("Right Arm") then
+			effectPart.CFrame = character["Right Arm"].CFrame
+		end
+
+		-- Arrêter l'animation après la fin
+		animTrack.Stopped:Connect(function()
+			effectPart:Destroy()
+		end)
+	end
+end
+
+humanoid.AnimationPlayed:Connect(onAnimationPlayed)
+
+
+-- move 4
+
+-- IDs des animations
+
+local animationId = 13501296372 -- Animation Hado 63 d'origine
+local replacementAnimationId = 12510170988 -- Animation de remplacement
+
+-- Obtenir les références du joueur et de son personnage
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+-- Fonction pour créer les effets de foudre électriques
+local function createElectricityEffect()
+	-- Création de la partie pour l'effet (partie invisible)
+	local ElectricityPart = Instance.new("Part")
+	ElectricityPart.Size = Vector3.new(1, 1, 1)
+	ElectricityPart.Anchored = true
+	ElectricityPart.CanCollide = false
+	ElectricityPart.Transparency = 1
+	ElectricityPart.CFrame = character["Right Arm"].CFrame -- Positionner l'effet sur le bras droit
+	ElectricityPart.Name = "Hado63Electricity"
+	ElectricityPart.Parent = workspace
+
+	-- Fonction pour créer un émetteur de particules
+	local function createParticleEmitter(properties)
+		local emitter = Instance.new("ParticleEmitter")
+		for prop, value in pairs(properties) do
+			emitter[prop] = value
+		end
+		emitter.Parent = ElectricityPart
+		return emitter
+	end
+
+	-- Créer des effets électriques comme des étincelles, des éclats et de la foudre
+	local Sparks2 = createParticleEmitter({
+		Acceleration = Vector3.new(0, 5, 0),
+		Brightness = 15,
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 204, 0)), -- Jaune normal
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(204, 153, 0)) -- Jaune foncé
+		}),
+		Drag = 7,
+		EmissionDirection = Enum.NormalId.Front,
+		Enabled = false,
+		FlipbookMode = Enum.ParticleFlipbookMode.OneShot,
+		Lifetime = NumberRange.new(1, 2),
+		Orientation = Enum.ParticleOrientation.VelocityParallel,
+		Rate = 400,
+		RotSpeed = NumberRange.new(-300, 300),
+		Rotation = NumberRange.new(0, 360),
+		Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 4, 2), NumberSequenceKeypoint.new(1, 0, 0)}),
+		Speed = NumberRange.new(20, 150),
+		SpreadAngle = Vector2.new(360, 360),
+		Texture = "rbxassetid://11341694984"
+	})
+
+	local Blast = createParticleEmitter({
+		Brightness = 10,
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 204, 0)), -- Jaune normal
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(204, 153, 0)) -- Jaune foncé
+		}),
+		EmissionDirection = Enum.NormalId.Front,
+		Enabled = false,
+		Lifetime = NumberRange.new(0.05, 0.05),
+		Orientation = Enum.ParticleOrientation.VelocityParallel,
+		Rate = 200,
+		Rotation = NumberRange.new(-360, 360),
+		Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 10, 0), NumberSequenceKeypoint.new(1, 12.2016, 0)}),
+		Speed = NumberRange.new(0.1, 0.1),
+		SpreadAngle = Vector2.new(360, 360),
+		Squash = NumberSequence.new({NumberSequenceKeypoint.new(0, -3, 0), NumberSequenceKeypoint.new(1, 2.5125, 0)}),
+		Texture = "rbxassetid://10435576555"
+	})
+
+	local Lightning = createParticleEmitter({
+		Brightness = 5,
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 204, 0)), -- Jaune normal
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(204, 153, 0)) -- Jaune foncé
+		}),
+		Drag = 3,
+		Enabled = false,
+		FlipbookFramerate = NumberRange.new(20, 40),
+		FlipbookLayout = Enum.ParticleFlipbookLayout.Grid4x4,
+		FlipbookStartRandom = true,
+		Lifetime = NumberRange.new(0.2, 1.3),
+		LockedToPart = true,
+		Orientation = Enum.ParticleOrientation.VelocityPerpendicular,
+		Rate = 100,
+		Rotation = NumberRange.new(0, 360),
+		Size = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0, 0),
+			NumberSequenceKeypoint.new(0.033642, 12.5435, 11.3034),
+			NumberSequenceKeypoint.new(0.075642, 11.0988, 11.5298),
+			NumberSequenceKeypoint.new(0.109642, 9.43785, 12.5917),
+			NumberSequenceKeypoint.new(0.177642, 11.175, 13.7364),
+			NumberSequenceKeypoint.new(1, 10.9192, 11.4744)
+		}),
+		Speed = NumberRange.new(0.001, 10),
+		SpreadAngle = Vector2.new(360, 360),
+		Texture = "rbxassetid://11492870634",
+		ZOffset = 2
+	})
+
+	local Wind2 = createParticleEmitter({
+		Brightness = 3,
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 204, 0)), -- Jaune normal
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(204, 153, 0)) -- Jaune foncé
+		}),
+		Enabled = false,
+		Lifetime = NumberRange.new(0.1, 0.1),
+		LightEmission = 1,
+		Orientation = Enum.ParticleOrientation.VelocityPerpendicular,
+		Rate = 100,
+		Rotation = NumberRange.new(-360, 360),
+		Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 13, 0), NumberSequenceKeypoint.new(0.2098, 13.4971, 0), NumberSequenceKeypoint.new(0.7863, 25.8763, 0), NumberSequenceKeypoint.new(1, 12.0779, 0)}),
+		Speed = NumberRange.new(0.001, 0.005),
+		SpreadAngle = Vector2.new(360, 360),
+		Texture = "rbxassetid://6959235625"
+	})
+
+	-- Retourner les émetteurs pour les activer/désactiver selon les besoins
+	return {
+		Sparks2 = Sparks2,
+		Blast = Blast,
+		Lightning = Lightning,
+		Wind2 = Wind2
+	}
+end
+
+-- Fonction déclenchée lorsqu'une animation est jouée
+local function onAnimationPlayed(animationTrack)
+	if animationTrack.Animation.AnimationId == "rbxassetid://" .. animationId then
+		-- Arrêter toutes les animations en cours
+		for _, animTrack in pairs(humanoid:GetPlayingAnimationTracks()) do
+			animTrack:Stop()
+		end
+
+		-- Charger et jouer l'animation de remplacement
+		local AnimAnim = Instance.new("Animation")
+		AnimAnim.AnimationId = "rbxassetid://" .. replacementAnimationId
+		local Anim = humanoid:LoadAnimation(AnimAnim)
+
+		Anim:Play()
+		Anim:AdjustSpeed(0) -- Commencer au ralenti
+		Anim.TimePosition = 0 -- Position de départ de l'animation
+		Anim:AdjustSpeed(1) -- Reprendre à la vitesse normale
+
+		-- Créer les effets électriques pour Hado 63
+		local emitters = createElectricityEffect()
+		emitters.Sparks2.Enabled = true
+		emitters.Blast.Enabled = true
+		emitters.Lightning.Enabled = true
+		emitters.Wind2.Enabled = true
+
+		-- Désactiver les particules après un certain temps
+		wait(2)
+		emitters.Sparks2.Enabled = false
+		emitters.Blast.Enabled = false
+		emitters.Lightning.Enabled = false
+		emitters.Wind2.Enabled = false
+	end
+end
+
+-- Connecter l'événement de détection d'animation
+humanoid.AnimationPlayed:Connect(onAnimationPlayed)
+
+
+
+-- end of move 4
+local Hado99AnimationId = "rbxassetid://13499771836"  -- Animation ID pour HADO 99
+local ModelId = "rbxassetid://127870856370306"  -- ID du modèle (dragon) à spawner
+local Sound1Id = "rbxassetid://18462330981"  -- Premier son à jouer
+local Sound2Id = "rbxassetid://511715134"  -- Deuxième son à jouer
+
+local MyPlr = game.Players.LocalPlayer
+local MyChar = MyPlr.Character or MyPlr.CharacterAdded:Wait()
+local humanoid = MyChar:WaitForChild("Humanoid")
+local humanoidRootPart = MyChar:WaitForChild("HumanoidRootPart")
+
+-- Fonction pour spawner le modèle (dragon)
+local function spawnDragon()
+	print("Tentative de chargement du dragon...")
+
+	-- Charger le modèle
+	local success, model = pcall(function()
+		return game:GetObjects(ModelId)[1]
+	end)
+
+	if success and model then
+		print("Dragon chargé avec succès.")
+		model.Parent = workspace
+
+		-- Position de départ du modèle (au-dessus du joueur)
+		local startPosition = humanoidRootPart.Position + Vector3.new(0, 10, -7)  -- Ajuster pour être en face du joueur
+		local faceDirection = humanoidRootPart.Position - startPosition  -- Direction vers laquelle le dragon regarde
+
+		-- Appliquer la position et ajouter une rotation supplémentaire pour corriger l'inclinaison
+		local correctedOrientation = CFrame.new(startPosition, humanoidRootPart.Position) * CFrame.Angles(0, 0, math.rad(5))  -- Rotation légère pour redresser
+
+		model:SetPrimaryPartCFrame(correctedOrientation)
+
+		-- Ancrer les parties du modèle pour éviter qu'il tombe
+		for _, part in pairs(model:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.Anchored = true
+			end
+		end
+
+		-- Jouer les sons
+		local sound1 = Instance.new("Sound", workspace)
+		sound1.SoundId = Sound1Id
+		sound1.Volume = 3
+		sound1:Play()
+
+		wait(0.7)
+
+		local sound2 = Instance.new("Sound", workspace)
+		sound2.SoundId = Sound2Id
+		sound2.Volume = 3
+		sound2:Play()
+
+		-- Détruire le modèle après 2.5 secondes
+		wait(2.5)
+		model:Destroy()
+	else
+		warn("Impossible de charger le dragon.")
+	end
+end
+
+-- Détecter l'activation de l'animation HADO 99
+local function onHado99AnimationPlayed(animationTrack)
+	if animationTrack.Animation.AnimationId == Hado99AnimationId then
+		print("HADO 99 détecté, activation des effets...")
+
+		-- Attendre 1.5 secondes avant de faire apparaître le dragon
+		wait(1.5)
+
+		-- Spawner le dragon
+		spawnDragon()
+	end
+end
+
+-- Connecter l'événement AnimationPlayed
+humanoid.AnimationPlayed:Connect(onHado99AnimationPlayed)
+
+--[[ Messages / Quotes ]]
+
+local function sendMessage(text)
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(text, "All")
+end
+
+local messages = {"Yare..", "Yare.."}
+for _, message in ipairs(messages) do
+	sendMessage(message)
+	wait(1)
+end
+
+
+--[[Execute Anims (Animations when you execute script]]
+
+local p = game.Players.LocalPlayer
+local Humanoid = p.Character:WaitForChild("Humanoid")
+
+for _, animTrack in pairs(Humanoid:GetPlayingAnimationTracks()) do
+	animTrack:Stop()
+end
+
+local AnimAnim = Instance.new("Animation")
+AnimAnim.AnimationId = "rbxassetid://15507137974" -- Replace with your animation ID
+
+local Anim = Humanoid:LoadAnimation(AnimAnim)
+
+local startTime = 0
+
+Anim:Play()
+Anim:AdjustSpeed(0)
+Anim.TimePosition = startTime
+Anim:AdjustSpeed(1)
+
+--[[END OF EXECUTE ANIMS]]
+
+--[[ Idle Animation ]]
+
+local function playIdleAnimation()
+	local animationId = "rbxassetid://15099756132" -- Replace with your animation ID
+	local player = game.Players.LocalPlayer
+	local character = player.Character or player.CharacterAdded:Wait()
+	local humanoid = character:WaitForChild("Humanoid")
+	local animator = humanoid:FindFirstChildOfClass("Animator") or humanoid:WaitForChild("Animator")
+
+	local animation = Instance.new("Animation")
+	animation.AnimationId = animationId
+	local animationTrack = animator:LoadAnimation(animation)
+
+	local function isMoving()
+		return humanoid.MoveDirection.Magnitude > 0
+	end
+
+	local function stopAnimation()
+		animationTrack:Stop()
+	end
+
+	-- Stop animation when the character moves
+	while true do
+		wait(0.1)
+		if not isMoving() then
+			animationTrack:Play()
+		else
+			stopAnimation()
+		end
+	end
+end
+
+-- Play Idle Animation
+playIdleAnimation()
+
+
+-- Function to show a notification
+local function showNotification(title, text)
+	local creditsText = "Credits to Novahitta"  -- Credits in English
+	game.StarterGui:SetCore("SendNotification", {
+		Title = title;
+		Text = text .. "\n" .. creditsText;  -- Add credits to the notification
+		Duration = 5; -- Duration of the notification
+	})
+end
+
+-- Script execution: Call this function to display the notification
+showNotification("Notification", "Script has been executed successfully.")
+
+
+-- Services
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+
+-- Local Player
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
